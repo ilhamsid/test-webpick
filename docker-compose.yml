@@ -1,0 +1,81 @@
+version: '3.6'
+services:
+
+  wordpress:
+    image: wordpress:latest
+    container_name: test-webpick
+    volumes:
+      - ./config/php.conf.ini:/usr/local/etc/php/conf.d/php.ini
+      - ./wordpress:/var/www/html
+    environment:
+      - WORDPRESS_DB_NAME=test-webpick
+      - WORDPRESS_TABLE_PREFIX=wp_
+      - WORDPRESS_DB_HOST=mysql
+      - WORDPRESS_DB_USER=root
+      - WORDPRESS_DB_PASSWORD=""
+    depends_on:
+      - mysql
+      - phpmyadmin
+    restart: always
+    ports:
+        - 80:80
+
+  mysql:
+    image: mariadb:latest
+    container_name: test-webpick_mysql
+    volumes:
+      - ./mysql:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=""
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=""
+      - MYSQL_DATABASE=test-webpick
+    restart: always
+
+  phpmyadmin:
+    depends_on:
+      - mysql
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: test-webpick_phpmyadmin
+    restart: always
+    ports:
+      - 80:80
+    environment:
+      PMA_HOST: mysql
+      MYSQL_ROOT_PASSWORD: ""
+
+
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    restart: always
+    ports:
+      - 80:80
+      - 3306:3306
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+
+
+  # Command line interface to wordpress
+  wpcli:
+    build: ./wpcli/
+    image: wpcli
+    container_name: test-webpick_wpcli
+    volumes:
+      - ./wordpress:/var/www/html
+    working_dir: /var/www/html
+
+# Check availability of essential services
+  healthcheck:
+    image: wpcli
+    build: ./wpcli/
+    container_name: test-webpick_healthcheck
+    command: sh -c "/wait"
+    environment:
+      - WAIT_HOSTS=mysql:3306, wordpress:80
+      - WAIT_BEFORE_HOSTS=5
+      - WAIT_AFTER_HOSTS=5
+      - WAIT_HOSTS_TIMEOUT=300
+      - WAIT_SLEEP_INTERVAL=60
+      - WAIT_HOST_CONNECT_TIMEOUT=5
+
+
