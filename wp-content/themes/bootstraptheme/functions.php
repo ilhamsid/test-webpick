@@ -19,4 +19,36 @@ function bootstrapstarter_wp_setup() {
 }
 
 add_action( 'after_setup_theme', 'bootstrapstarter_wp_setup' );
+
+
+
+function getLastBrand($args) {
+	$brand = $args['brand'];
+	$cat_id = get_cat_ID($brand);
+	echo '<h3 class="text-info mt-5">Derniers articles '.$brand.'</h3>';
+
+	$args = array(
+            'post_type' => 'post' ,
+            'orderby' => 'date' ,
+            'order' => 'DESC' ,
+            'posts_per_page' => 4,
+            'cat'         => $cat_id
+        ); 
+    $req = new WP_Query($args);
+
+
+    if ($req->have_posts()) { 
+        while ($req->have_posts()) : $req->the_post();
+    ?>
+        <div class="col-md-12">
+            <h4><?php the_title(); ?></h4>
+            <p class="text-justify"><?php the_content(); ?></p>
+        </div>
+    <?php
+        endwhile;
+    }else
+        echo 'Aucun article'; 
+
+}
+add_shortcode( 'last_brand', 'getLastBrand' );
 ?>
